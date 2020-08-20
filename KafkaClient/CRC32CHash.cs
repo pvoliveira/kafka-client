@@ -37,7 +37,7 @@ namespace KafkaClient
             }
         }
 
-        static uint InternalCompute(uint crci, byte[] data, int offset, int len)
+        static uint InternalCompute(uint crci, ReadOnlySpan<byte> data, int offset, int len)
         {
             ulong crc = crci ^ 0xffffffff;
 
@@ -49,7 +49,7 @@ namespace KafkaClient
 
             while (len >= 8)
             {
-                var ncopy = BitConverter.ToUInt64(data, offset);
+                var ncopy = BitConverter.ToUInt64(data.Slice(offset));
 
                 crc ^= ncopy;
                 crc = Table[7, crc & 0xff] ^
@@ -73,12 +73,12 @@ namespace KafkaClient
             return (uint) crc ^ 0xffffffff;
         }
 
-        public static uint Compute(byte[] data)
+        public static uint Compute(ReadOnlySpan<byte> data)
         {
             return InternalCompute(0, data, 0, data.Length);
         }
 
-        public static uint Compute(byte[] data, int offset, int length)
+        public static uint Compute(ReadOnlySpan<byte> data, int offset, int length)
         {
             return InternalCompute(0, data, offset, length);
         }

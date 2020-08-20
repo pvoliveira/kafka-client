@@ -1,6 +1,7 @@
 namespace KafkaClient.Messages
 {
     using System;
+    using System.Buffers;
     using System.IO;
 
     public class LeaveGroupV4Request : IRequestMessageV2<LeaveGroupV4Response>

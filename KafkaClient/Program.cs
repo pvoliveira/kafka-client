@@ -1,6 +1,7 @@
 ﻿namespace KafkaClient
 {
     using System;
+    using System.Diagnostics;
     using System.Text;
     using System.Threading.Tasks;
     using KafkaClient.Messages;
@@ -9,21 +10,27 @@
     {
         static async Task Main(string[] args)
         {
+            var sw = new Stopwatch();
+
+            Console.ReadKey();
+
+            sw.Start();
+
             var memberId = Guid.NewGuid().ToString();
             const string groupId = "print-console-handler";
 
-            var connection = new KafkaHostConnection(
+            var host = await KafkaHost.MakeHostAsync(
                 "localhost",
                 9092,
                 "test-client-id");
 
             var now = DateTimeOffset.Now.ToUnixTimeMilliseconds();
 
-            var apiVersion = await connection.SendAsync(
+            var apiVersion = await host.SendAsync(
                 new ApiVersionV2Request(),
                 TimeSpan.FromSeconds(30));
 
-            var topicMetadata = await connection.SendAsync(
+            var topicMetadata = await host.SendAsync(
                 new TopicMetadataV9Request(
                     new[] { new TopicMetadataV9Request.Topic("test-topic") },
                     false,
@@ -31,11 +38,11 @@
                     true),
                 TimeSpan.FromSeconds(30));
 
-            var findCoordResponse = await connection.SendAsync(
+            var findCoordResponse = await host.SendAsync(
                 new FindCoordinatorV3Request(string.Empty, 0),
                 TimeSpan.FromSeconds(30));
 
-            var joinGroupResponse = await connection.SendAsync(
+            var joinGroupResponse = await host.SendAsync(
                 new JoinGroupV7Request(
                     "print-console-handler",
                     300000,
@@ -46,7 +53,7 @@
                     new[] { new JoinGroupV7Request.Protocol("consumer", Array.Empty<byte>()), }),
                 TimeSpan.FromSeconds(30));
 
-            var joinGroupResponse1 = await connection.SendAsync(
+            var joinGroupResponse1 = await host.SendAsync(
                 new JoinGroupV7Request(
                     "print-console-handler",
                     300000,
@@ -57,15 +64,14 @@
                     new[] { new JoinGroupV7Request.Protocol("consumer", Array.Empty<byte>()), }),
                 TimeSpan.FromSeconds(30));
 
-
-            var heartbeatResponse = await connection.SendAsync(
+            var heartbeatResponse = await host.SendAsync(
                 new HeartbeatV4Request(
                     groupId,
                     joinGroupResponse1.GenerationId,
                     joinGroupResponse1.MemberId),
                 TimeSpan.FromSeconds(30));
 
-            var offsetFetchResponse = await connection.SendAsync(
+            var offsetFetchResponse = await host.SendAsync(
                 new OffsetFetchV5Request(
                     groupId,
                     new[]
@@ -76,13 +82,22 @@
                     }),
                 TimeSpan.FromSeconds(30));
 
-            var produceResponse = await ProduceMessage(connection, now);
-            var fetchResponse = await FetchMessage(connection);
+            for (int i = 0; i < 2; i++)
+            {
 
-            await Task.Delay(5000);
+                var produceResponse = await ProduceMessage(host, now);
+                var fetchResponse = await FetchMessage(host);
+
+                Console.WriteLine(i);
+            }
+
+            sw.Stop();
+            //await Task.Delay(5000);
+
+            Console.WriteLine(sw.ElapsedMilliseconds);
         }
 
-        private static Task<FetchV11Response> FetchMessage(KafkaHostConnection connection)
+        private static Task<FetchV11Response> FetchMessage(KafkaHost connection)
         {
             return connection.SendAsync(
                 new FetchV11Request
@@ -124,7 +139,7 @@
                 TimeSpan.FromSeconds(30));
         }
 
-        private static Task<ProduceV8Response> ProduceMessage(KafkaHostConnection connection, long now)
+        private static Task<ProduceV8Response> ProduceMessage(KafkaHost connection, long now)
         {
             return connection.SendAsync(
                 new ProduceV8Request(

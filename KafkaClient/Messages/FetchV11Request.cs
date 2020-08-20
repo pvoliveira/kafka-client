@@ -1,6 +1,7 @@
 namespace KafkaClient.Messages
 {
     using System;
+    using System.Buffers;
     using System.IO;
 
     public class FetchV11Request : IRequestMessage<FetchV11Response>

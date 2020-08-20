@@ -1,5 +1,6 @@
 namespace KafkaClient.Messages
 {
+    using System.Buffers;
     using System.IO;
 
     public class OffsetCommitV2Request : IRequestMessage<OffsetCommitV2Response>

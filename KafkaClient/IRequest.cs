@@ -1,5 +1,6 @@
 namespace KafkaClient
 {
+    using System.Buffers;
     using System.IO;
     using KafkaClient.Messages;
 
